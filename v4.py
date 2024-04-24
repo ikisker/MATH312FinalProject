@@ -33,7 +33,7 @@ def load_audio_file():
     file_path = filedialog.askopenfilename(title="Load Audio File")
     if file_path:
         try:
-            sample_wavio_obj = wavio.read("496127__timbre__loopable-airy-remix-of-erokias-freesound-496096.wav")
+            sample_wavio_obj = wavio.read(file)
             audio_data = sample_wavio_obj.data
             sample_rate = sample_wavio_obj.rate
             # Call functions to process audio data and update waveform display
