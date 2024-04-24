@@ -84,6 +84,11 @@ def Chaos2():
     ax.set_title("An audio signal?")
     ax.legend()
     ax.grid();
+
+    u1 = u - u.mean() 
+    u1 = u1 / abs(u1).max()
+    wavio.write("noise.wav", u1, 44100, sampwidth=2)
+    IPython.display.Audio("noise.wav")
     # u = sol.y[0,:] # extract x(t)
     # v = sol.y[1,:] # extract y(t)
     # w = sol.y[2,:] # extract z(t)
@@ -99,6 +104,26 @@ def Chaos2():
     # ax.grid();
     plt.show()
 
+def readInAudio():
+    k = wavio.read("untitled.wav")
+    wavio.write("ch1.wav", k.data[:12*44100,0], 44100, sampwidth=2)
+    fig,ax = plt.subplots(figsize=(12,4))
+    ax.plot(arange(30000)/44100,k.data[:30000,0],label="x")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Amplitude")
+    ax.set_title("An audio signal for a piano recording")
+    ax.legend()
+    ax.grid();
+    plt.show()
+
+    # now we add the noise to the piano music
+    noisesize = sqrt((u**2).sum())
+    musicsize = sqrt((k.data[:12*44100,0]**2).sum())
+    signal = u + k.data[:12*44100,0]*noisesize/musicsize/1000
+    signal1 = signal-signal.mean()
+    signal1 = signal1 / abs(signal1).max()
+    wavio.write("signal.wav",signal1,44100,sampwidth=2)
+    IPython.display.Audio("signal.wav")
 
 
 Chaos2()

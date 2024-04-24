@@ -1,0 +1,126 @@
+import tkinter as tk
+from tkinter import filedialog
+import wavio
+import numpy as np
+from scipy.interpolate import CubicSpline
+from scipy.integrate import solve_ivp
+
+# Existing Lorentz function from the original code
+def Lorentz(t, a):
+    u = a[0]  # unpack x
+    v = a[1]  # unpack y
+    w = a[2]  # unpack z
+    dotu = 16*(v-u)
+    dotv = u*(45.6-20*w)-v
+    dotw = 5*u*v - 4*w
+    return np.array([dotu, dotv, dotw])  # return vector of derivatives
+
+def load_audio_file():
+    file_path = filedialog.askopenfilename(title="Load Audio File")
+    if file_path:
+        try:
+            audio_data, sample_rate = wavio.read(file_path)
+            # Call functions to process audio data and update waveform display
+            process_audio_data(audio_data, sample_rate)
+            plot_waveform(waveform_canvas, audio_data)
+        except Exception as e:
+            print(f"Error loading audio file: {e}")
+
+def process_audio_data(audio_data, sample_rate):
+    # Existing code for generating noise signal
+    ic = np.array([-2.3, -1.9, 2.2])  # Initial conditions
+    tend = 20000  # Simulation end time
+    t = np.linspace(0, tend, 12*sample_rate)  # Times for simulation
+    sol = solve_ivp(Lorentz, [0, tend], ic, t_eval=t, atol=1e-9, rtol=1e-8)
+    u = sol.y[0, :]  # Extract u(t)
+
+    # Normalize and combine signals
+    noise_size = np.sqrt((u**2).sum())
+    music_size = np.sqrt((audio_data[:12*sample_rate, 0]**2).sum())
+    signal = u + audio_data[:12*sample_rate, 0]*noise_size/music_size/1000
+
+    # Create cubic spline for signal
+    ufun = CubicSpline(t, signal)
+
+    # Define Lorentz2 function for recovery
+    def Lorentz2(tt, a):
+        assert np.isscalar(tt)
+        U = a[0]
+        V = a[1]
+        W = a[2]
+        uu = ufun(np.array([tt]))[0]
+        dotU = 16*(V-U)
+        dotV = uu*(45.6-20*W)-V
+        dotW = 5*uu*V - 4*W
+        return np.array([dotU, dotV, dotW])
+
+    # Recover music signal
+    sol = solve_ivp(Lorentz2, [0, tend], ic, t_eval=t, atol=1e-9, rtol=1e-8)
+    U = sol.y[0, :]
+    recovered_music = U - u
+
+    # Update waveform display with recovered music
+    plot_waveform(waveform_canvas, recovered_music)
+
+def save_audio_file():
+    file_path = filedialog.asksaveasfilename(defaultextension=".wav", title="Save Audio File")
+    if file_path:
+        try:
+            # Get the audio data from the waveform canvas
+            audio_data = get_audio_data_from_canvas(waveform_canvas)
+            wavio.write(file_path, audio_data, 44100, sampwidth=2)
+        except Exception as e:
+            print(f"Error saving audio file: {e}")
+
+def plot_waveform(canvas, audio_data):
+    # Clear the canvas
+    canvas.delete("all")
+
+    # Plot the waveform data on the canvas
+    canvas_width = canvas.winfo_width()
+    canvas_height = canvas.winfo_height()
+    samples = len(audio_data)
+    x_scale = canvas_width / samples
+    y_scale = canvas_height / 2
+
+    canvas.create_line(0, canvas_height//2, canvas_width, canvas_height//2, fill="gray")
+
+    for i in range(samples):
+        x1 = i * x_scale
+        y1 = canvas_height//2 - audio_data[i] * y_scale
+        x2 = (i + 1) * x_scale
+        y2 = canvas_height//2 - audio_data[i + 1] * y_scale
+        canvas.create_line(x1, y1, x2, y2, fill="blue")
+
+def get_audio_data_from_canvas(canvas):
+    # Function to extract audio data from the waveform canvas
+    # You may need to implement this based on how you store the audio data in the canvas
+    pass
+
+root = tk.Tk()
+root.title("Audio Processing GUI")
+
+# Create frames for different sections of the GUI
+file_frame = tk.Frame(root)
+processing_frame = tk.Frame(root)
+waveform_frame = tk.Frame(root)
+
+# Create widgets and place them in the frames
+# Load audio file button
+load_button = tk.Button(file_frame, text="Load Audio File", command=load_audio_file)
+load_button.pack()
+
+# Save audio file button
+save_button = tk.Button(file_frame, text="Save Audio File", command=save_audio_file)
+save_button.pack()
+
+# Waveform canvas
+waveform_canvas = tk.Canvas(waveform_frame, width=800, height=400)
+waveform_canvas.pack()
+
+# Pack the frames
+file_frame.pack()
+processing_frame.pack()
+waveform_frame.pack()
+
+root.mainloop()
