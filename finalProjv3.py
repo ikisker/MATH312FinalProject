@@ -9,9 +9,9 @@ matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
-
 sample_rate = None
 audio_data = None
+u = None
 
 # Existing Lorentz function from the original code
 def Lorentz(t, a):
@@ -24,6 +24,7 @@ def Lorentz(t, a):
     return np.array([dotu, dotv, dotw])  # return vector of derivatives
 
 def load_audio_file():
+    global audio_data, sample_rate
     file_path = filedialog.askopenfilename(title="Load Audio File")
     if file_path:
         try:
@@ -31,13 +32,12 @@ def load_audio_file():
             audio_data = wav_obj.data
             sample_rate = wav_obj.rate
             # Call functions to process audio data and update waveform display
-            # process_audio_data(audio_data, sample_rate)
             plot_waveform(input_fig, audio_data, "Input Signal")
-            return audio_data, sample_rate
         except Exception as e:
             print(f"Error loading audio file: {e}")
 
 def generate_noise():
+    global u
     ic = np.array([-2.3, -1.9, 2.2])  # Initial conditions
     tend = len(audio_data) / sample_rate  # Calculate the duration of the audio file
     t = np.linspace(0, tend, len(audio_data))  # Times for simulation
@@ -46,12 +46,19 @@ def generate_noise():
     plot_waveform(noise_fig, u, "Noise Signal")
 
 def combine_signals():
+    global u
     noise_size = np.sqrt((u**2).sum())
     music_size = np.sqrt((audio_data**2).sum())
     signal = u + audio_data*noise_size/music_size/1000
     plot_waveform(combined_fig, signal, "Combined Signal")
 
+
 def decode_signal():
+    global u
+    ic = np.array([-2.3, -1.9, 2.2])  # Initial conditions
+    tend = len(audio_data) / sample_rate  # Calculate the duration of the audio file
+    t = np.linspace(0, tend, len(audio_data))  # Times for simulation
+
     ufun = CubicSpline(t, signal)
 
     def Lorentz2(tt, a):
@@ -80,7 +87,7 @@ def plot_waveform(fig, data, title):
     ax.plot(data)
     ax.set_title(title)
     fig.tight_layout()
-    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.draw()
     canvas.get_tk_widget().pack()
 
