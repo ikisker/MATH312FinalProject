@@ -9,8 +9,9 @@ matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
-process_audio_data = None
+
 sample_rate = None
+audio_data = None
 
 # Existing Lorentz function from the original code
 def Lorentz(t, a):

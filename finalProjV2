@@ -94,7 +94,6 @@ def plot_waveform(canvas, audio_data):
 
 def get_audio_data_from_canvas(canvas):
     # Function to extract audio data from the waveform canvas
-    # You may need to implement this based on how you store the audio data in the canvas
     pass
 
 root = tk.Tk()
